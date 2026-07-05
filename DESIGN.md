@@ -94,12 +94,12 @@
 
 ### Phase 0：可行性原型（1-2 周）—— 先把风险最大的假设验证掉
 
-技术风险从高到低验证：
+技术风险从高到低验证（iOS / iPhone 17 真机）：
 
-1. 车机蓝牙断开事件在后台能否稳定拿到（Android BroadcastReceiver / iOS 受限程度）
-2. 气压计楼层推算：实地去 2-3 个商场地库，采集气压曲线，验证层数推算准确率
-3. PDR 面包屑：走 100-200 米回放，看误差是否在"目视可见"范围内
-4. 后台保活：锁车检测所需的后台权限在主流机型上的存活情况
+1. **快捷指令自动化链路**：建"车机蓝牙断开 → 运行 App Intent"自动化，验证能否无确认、后台静默触发，以及触发延迟；顺带验证 CarPlay 断开触发器。
+2. **CoreMotion 历史回放**：停一次车，几小时后查询 `CMMotionActivityManager` / `CMPedometer` 历史，验证能否准确还原停车时刻、步数、上下楼层数。
+3. **气压计楼层推算**：实地去 2-3 个商场地库，App 前台开着采集 `CMAltimeter` 曲线，验证层数推算准确率（先不管后台，先验证物理可行性）。
+4. **PDR 面包屑**：走 100-200 米回放，看误差是否在"目视可见"范围内；测锁车触发后后台还能记录多久。
 
 **产出**：每项一个验证 Demo + 结论文档。任何一项不成立，对应功能降级为手动方案。
 
@@ -149,17 +149,25 @@
         （MVP 纯本地，无后端；共享功能后期加轻后端）
 ```
 
-### 3.2 关键技术点
+### 3.2 关键技术点（iOS 首发，目标机型 iPhone 17 / iOS 26）
 
-| 能力 | Android | iOS | 备注 |
-|------|---------|-----|------|
-| 蓝牙断开检测 | `ACTION_ACL_DISCONNECTED` 广播 | 受限，用 CarPlay 断开 + Visit 兜底 | Android 更可靠，建议首发平台 |
-| 活动识别 | Activity Recognition Transition API（`IN_VEHICLE` 退出） | `CMMotionActivityManager`（automotive→walking） | 双端都低功耗 |
-| 气压计 | `Sensor.TYPE_PRESSURE` | `CMAltimeter` | 相对气压差判层，需入口基准点 |
-| PDR 面包屑 | 计步器 + 旋转矢量传感器 | `CMPedometer` + `CMDeviceMotion` | 只做短距离（<300步） |
-| OCR | ML Kit（本地） | Vision 框架（本地） | 车位号正则提取（如 `B2-035`） |
-| 步行导航 | 高德 SDK 或 URI deep link | Apple Maps / 高德 | MVP 用 deep link 最省事 |
-| 后台任务 | 前台服务（驾驶中短时开启） | 后台受限，靠系统事件驱动 | Android 需引导关闭电池优化 |
+iOS 后台限制比 Android 严，但有三张 Android 没有的牌，整个方案围绕它们设计：
+
+1. **快捷指令自动化（Shortcuts Automation）**：iOS 支持"当断开某个蓝牙设备 / 断开 CarPlay 时→立即运行（无需确认）"的个人自动化，且可以在后台调用我们 App 暴露的 App Intent。这是 iOS 上**唯一可靠的"锁车即触发"通道**，绕开了第三方 App 拿不到蓝牙断开事件的限制。首次启动引导用户花 30 秒建好这条自动化。
+2. **CoreMotion 历史查询**：`CMMotionActivityManager` 与 `CMPedometer` 都可以查询**过去 7 天**的历史数据（活动类型切换、步数、距离、上下楼层数 `floorsAscended/Descended`）。即使 App 在停车瞬间没有运行，事后也能回放出"几点几分从驾驶切到步行"，作为自动化失灵时的补录兜底。
+3. **UWB 精确查找**：iPhone 17 带 UWB 芯片。推荐用户在车里放一个 AirTag——最后 30 米由系统级"精确查找"（方向箭头+米级距离）解决，且 Find My 网络能在地库里借路人 iPhone 上报车的大致位置。这不是竞品，是本产品的最佳搭档：AirTag 管"最后 30 米"，我们管"楼层、路径、从商场里怎么走回停车场"。
+
+| 能力 | iOS 实现 | 备注 |
+|------|---------|------|
+| 锁车触发 | 快捷指令自动化（车机蓝牙/CarPlay 断开 → 运行 App Intent） | 后台静默执行，主通道 |
+| 触发兜底 | `CLLocationManager` Visit 监测 + 显著位置变化唤醒；`CMMotionActivityManager` 历史回放补录 | 自动化没建/失灵时用 |
+| 停车定位 | 唤醒时取当前/最近位置；入地库前最后高精度点=入口坐标 | 驾驶中靠显著位置变化周期性唤醒刷新"最后已知位置" |
+| 活动识别 | `CMMotionActivityManager`（automotive→walking，支持历史查询） | 低功耗 |
+| 气压/楼层 | `CMAltimeter`（iPhone 全系有气压计）；`CMPedometer.floorsAscended/Descended` 历史数据辅助 | 实时气压需 App 在后台活着，做不到时降级为一键选层 |
+| PDR 面包屑 | `CMPedometer`（步数/距离）+ `CMDeviceMotion`（航向） | 锁车触发后以后台任务短时运行；只做 <300 步 |
+| OCR | Vision 框架（`VNRecognizeTextRequest`，本地） | 车位号正则提取（如 `B2-035`） |
+| 步行导航 | Apple Maps `MKDirections`/URL scheme；国内可选高德 URL scheme | MVP 用 URL scheme 最省事 |
+| 最后 30 米 | 雷达模式（`CLLocation` 方位+距离）；有 AirTag 则跳转 Find My 精确查找 | |
 
 ### 3.3 停车检测状态机（核心逻辑）
 
@@ -176,25 +184,27 @@
 
 ### 3.4 技术选型建议
 
-- **首发平台：Android 原生（Kotlin）**。理由：蓝牙断开广播、前台服务、传感器后台访问都比 iOS 宽松，验证产品假设最快；iOS 在 Phase 3 补齐（部分自动化能力需降级为手动+Visit 触发）。
-- 不建议 MVP 用跨平台框架：本产品 80% 的难点在系统级传感器/后台事件，跨平台框架在这层反而增加成本。UI 层很薄，后期迁移代价小。
-- 存储：Room(SQLite) + 本地文件；无后端。
-- 地图：MVP 用高德 URI deep link（零 SDK 集成成本），Phase 2 换 SDK 做嵌入式导航。
+- **首发平台：iOS 原生（Swift + SwiftUI）**，目标设备 iPhone 17（iOS 26）。理由：用户自己的设备就是 iPhone，且本产品 80% 的难点在系统级传感器/后台事件（CoreMotion、CoreLocation、App Intents、快捷指令自动化），原生是唯一顺畅的路径，跨平台框架在这层反而增加成本。Android 版在产品验证后再做。
+- 架构：SwiftUI + 一个纯 Swift 的领域层（停车检测状态机、楼层推算、面包屑），传感器/定位封装成协议便于模拟测试。
+- 存储：SwiftData（或 Core Data）+ 本地文件存照片；无后端，数据不出设备。
+- 地图：MVP 用 Apple Maps / 高德 URL scheme（零集成成本），Phase 2 视需要换 MapKit `MKDirections` 做嵌入式引导。
+- 分发：开发期用 Xcode 真机调试 / TestFlight 即可，不急上架。
 
-### 3.5 主要风险与对策
+### 3.5 主要风险与对策（iOS）
 
 | 风险 | 影响 | 对策 |
 |------|------|------|
-| 国产 ROM 杀后台，错过锁车事件 | 自动记录失败 | 引导加白名单；蓝牙广播是系统级事件较难杀；手动记录兜底 |
-| 气压受天气/空调影响漂移 | 楼层判错 | 只用短时间窗内的相对差；置信度低时改问用户（一键选层） |
+| 用户没建快捷指令自动化 / 自动化被系统延迟 | 错过锁车瞬间 | 首启强引导（30 秒建好）；CoreMotion 历史回放补录：下次打开 App 时自动找回停车时刻并推算位置 |
+| 锁车触发时 App 后台运行时间短（~30s） | 面包屑记录被中断 | 用 `beginBackgroundTask` + 定位后台模式延长；记不满就记多少用多少，照片兜底 |
+| 地库内无 GPS，唤醒时拿到的坐标是旧的 | 停车点≈入口坐标，有偏差 | 产品上明确表达"停车场入口"而非"车位"；楼层+面包屑+照片补齐入口以内的部分 |
+| 气压基准点缺失（驾驶中 App 没活着） | 实时判层不可用 | 用 `CMPedometer` 历史楼层数辅助；置信度低时一键选层 |
 | PDR 误差累积 | 面包屑带偏 | 限制 300 步内；按"步数+转向"给指令而非画精确地图；照片兜底 |
-| 手机没气压计（低端机） | 无楼层推算 | 检测硬件，自动降级为一键选层 |
-| 用户不连车机蓝牙 | 少一个强信号 | 活动识别兜底；首次引导配对检测 |
+| 精确查找依赖 AirTag | 无 AirTag 时最后 30 米靠雷达模式 | AirTag 作为推荐搭配而非必需 |
 
 ---
 
 ## 四、下一步
 
-1. 确认首发平台（建议 Android，也可按你自己的手机定）
-2. 搭 Android 工程骨架 + Phase 0 的 4 个验证 Demo
-3. 拿真实商场地库数据回填气压/PDR 参数
+1. ~~确认首发平台~~ 已定：iOS（用户设备 iPhone 17）
+2. 搭 Xcode 工程骨架（SwiftUI）+ Phase 0 的 4 个验证 Demo（自动化触发、CoreMotion 历史回放、气压采集、PDR）
+3. 用户拿真机去一趟商场地库，回填气压/PDR 实测数据，确定楼层推算参数
