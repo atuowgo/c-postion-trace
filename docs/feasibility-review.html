@@ -1,0 +1,647 @@
+<title>寻车助手 · 工程可行性评审</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --surface-2: #eef1f5;
+    --ink: #1c232e;
+    --muted: #5c6675;
+    --line: #dfe4ea;
+    --accent: #2757c4;
+    --accent-ink: #ffffff;
+    --accent-soft: #e8eefb;
+    --ok: #17784f;
+    --ok-soft: #e2f3ea;
+    --warn: #92650a;
+    --warn-soft: #faf0d8;
+    --risk: #b03a30;
+    --risk-soft: #fbe7e4;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #11141a;
+      --surface: #191e26;
+      --surface-2: #20262f;
+      --ink: #e6eaf1;
+      --muted: #98a2b1;
+      --line: #2b323d;
+      --accent: #7ea3f5;
+      --accent-ink: #0e1524;
+      --accent-soft: #1d2a44;
+      --ok: #52c08c;
+      --ok-soft: #16301f;
+      --warn: #ddb355;
+      --warn-soft: #33290f;
+      --risk: #e2796e;
+      --risk-soft: #391a17;
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #f5f6f8; --surface: #ffffff; --surface-2: #eef1f5; --ink: #1c232e;
+    --muted: #5c6675; --line: #dfe4ea; --accent: #2757c4; --accent-ink: #ffffff;
+    --accent-soft: #e8eefb; --ok: #17784f; --ok-soft: #e2f3ea; --warn: #92650a;
+    --warn-soft: #faf0d8; --risk: #b03a30; --risk-soft: #fbe7e4;
+  }
+  :root[data-theme="dark"] {
+    --bg: #11141a; --surface: #191e26; --surface-2: #20262f; --ink: #e6eaf1;
+    --muted: #98a2b1; --line: #2b323d; --accent: #7ea3f5; --accent-ink: #0e1524;
+    --accent-soft: #1d2a44; --ok: #52c08c; --ok-soft: #16301f; --warn: #ddb355;
+    --warn-soft: #33290f; --risk: #e2796e; --risk-soft: #391a17;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    font-size: 16px;
+    line-height: 1.75;
+  }
+  .page { max-width: 920px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  /* ---------- header ---------- */
+  .doc-head { border-bottom: 2px solid var(--ink); padding-bottom: 28px; margin-bottom: 36px; }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 10px;
+  }
+  h1 {
+    font-size: clamp(28px, 4.5vw, 40px); line-height: 1.25;
+    margin: 0 0 14px; font-weight: 700; letter-spacing: 0.01em; text-wrap: balance;
+  }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 13px; color: var(--muted); font-family: var(--mono); }
+
+  /* ---------- verdict ---------- */
+  .verdict {
+    display: flex; gap: 18px; align-items: flex-start;
+    background: var(--surface); border: 1px solid var(--line);
+    border-left: 4px solid var(--ok);
+    padding: 20px 22px; border-radius: 6px; margin: 0 0 14px;
+  }
+  .verdict .stamp {
+    flex: none; font-family: var(--mono); font-weight: 700; font-size: 14px;
+    color: var(--ok); background: var(--ok-soft);
+    padding: 4px 12px; border-radius: 4px; letter-spacing: 0.08em; margin-top: 3px;
+  }
+  .verdict p { margin: 0; }
+
+  /* ---------- sections ---------- */
+  section { margin-top: 52px; }
+  h2 {
+    font-size: 21px; font-weight: 700; margin: 0 0 6px;
+    display: flex; align-items: baseline; gap: 12px; letter-spacing: 0.01em;
+  }
+  h2 .no {
+    font-family: var(--mono); font-size: 13px; color: var(--accent);
+    letter-spacing: 0.08em; flex: none;
+  }
+  .h2-sub { color: var(--muted); font-size: 14.5px; margin: 0 0 20px; max-width: 68ch; }
+  h3 { font-size: 16.5px; margin: 28px 0 10px; font-weight: 700; }
+  p { max-width: 72ch; }
+
+  /* ---------- chips ---------- */
+  .chip {
+    display: inline-block; font-family: var(--mono); font-size: 12px; font-weight: 700;
+    padding: 2px 10px; border-radius: 4px; letter-spacing: 0.05em; white-space: nowrap;
+  }
+  .chip.ok   { color: var(--ok);   background: var(--ok-soft); }
+  .chip.warn { color: var(--warn); background: var(--warn-soft); }
+  .chip.risk { color: var(--risk); background: var(--risk-soft); }
+  .chip.info { color: var(--accent); background: var(--accent-soft); }
+
+  /* ---------- funnel ---------- */
+  .funnel { display: grid; gap: 10px; margin: 20px 0 4px; }
+  .funnel-row {
+    display: flex; align-items: center; gap: 16px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+    padding: 12px 16px;
+  }
+  .lvl {
+    flex: none; width: 46px; height: 46px; border-radius: 6px;
+    background: var(--accent); color: var(--accent-ink);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-weight: 700; font-size: 17px;
+  }
+  .funnel-row .fr-body { min-width: 0; }
+  .funnel-row .fr-title { font-weight: 700; }
+  .funnel-row .fr-note { font-size: 13.5px; color: var(--muted); }
+  .funnel-row .fr-scope {
+    margin-left: auto; flex: none; font-family: var(--mono); font-size: 12px;
+    color: var(--muted); text-align: right;
+  }
+  @media (max-width: 560px) { .funnel-row .fr-scope { display: none; } }
+
+  /* ---------- capability cards ---------- */
+  .cap { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; margin-top: 22px; overflow: hidden; }
+  .cap-head {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    padding: 16px 20px; border-bottom: 1px solid var(--line); background: var(--surface-2);
+  }
+  .cap-head .lvl { width: 38px; height: 38px; font-size: 14px; }
+  .cap-head .cap-title { font-weight: 700; font-size: 17px; }
+  .cap-head .chip { margin-left: auto; }
+  .cap-body { padding: 6px 20px 20px; }
+  .cap-body dl { margin: 14px 0 0; }
+  .cap-body dt {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 4px;
+  }
+  .cap-body dd { margin: 0 0 14px; max-width: 74ch; }
+  code {
+    font-family: var(--mono); font-size: 0.86em;
+    background: var(--surface-2); border: 1px solid var(--line);
+    padding: 1px 6px; border-radius: 4px; white-space: nowrap;
+  }
+  .fallback { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 14px; }
+  .fallback .fb {
+    background: var(--surface-2); border: 1px solid var(--line);
+    padding: 3px 10px; border-radius: 99px; font-size: 13px;
+  }
+  .fallback .arr { color: var(--muted); font-family: var(--mono); }
+
+  /* ---------- findings ---------- */
+  .finding {
+    border: 1px solid var(--line); border-left: 4px solid var(--warn);
+    background: var(--surface); border-radius: 6px; padding: 16px 20px; margin-top: 16px;
+  }
+  .finding.neg { border-left-color: var(--risk); }
+  .finding.pos { border-left-color: var(--ok); }
+  .finding .f-title { font-weight: 700; margin-bottom: 6px; }
+  .finding p { margin: 6px 0 0; font-size: 15px; }
+
+  /* ---------- tables ---------- */
+  .tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); margin-top: 18px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 640px; }
+  th {
+    text-align: left; font-family: var(--mono); font-size: 11.5px;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+    padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--surface-2);
+    white-space: nowrap;
+  }
+  td { padding: 11px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td.num, th.num { font-variant-numeric: tabular-nums; }
+
+  /* ---------- architecture ---------- */
+  .arch { display: grid; gap: 12px; margin-top: 18px; }
+  .arch-layer { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 14px 16px; }
+  .arch-layer .al-name {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 10px;
+  }
+  .arch-mods { display: flex; flex-wrap: wrap; gap: 8px; }
+  .mod {
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px;
+    padding: 6px 12px; font-size: 13.5px;
+  }
+  .mod small { display: block; color: var(--muted); font-family: var(--mono); font-size: 11px; }
+  .arch-note { text-align: center; color: var(--muted); font-size: 13px; font-family: var(--mono); }
+
+  /* ---------- state machine ---------- */
+  .sm { display: grid; gap: 0; margin-top: 18px; }
+  .sm-state {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+    padding: 14px 18px;
+  }
+  .sm-state .s-name { font-family: var(--mono); font-weight: 700; color: var(--accent); font-size: 14px; }
+  .sm-state .s-desc { font-size: 14px; color: var(--muted); margin-top: 2px; }
+  .sm-edge {
+    padding: 6px 0 6px 34px; color: var(--muted); font-size: 13px; font-family: var(--mono);
+    position: relative;
+  }
+  .sm-edge::before {
+    content: "↓"; position: absolute; left: 14px; color: var(--accent); font-weight: 700;
+  }
+
+  /* ---------- schema ---------- */
+  pre.schema {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+    padding: 18px 20px; overflow-x: auto; font-family: var(--mono);
+    font-size: 13px; line-height: 1.7; margin-top: 18px;
+  }
+  pre.schema .k { color: var(--accent); }
+  pre.schema .c { color: var(--muted); }
+
+  /* ---------- gates ---------- */
+  ol.gates { padding-left: 0; list-style: none; counter-reset: g; margin-top: 18px; display: grid; gap: 10px; }
+  ol.gates li {
+    counter-increment: g; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 6px; padding: 14px 18px 14px 58px; position: relative;
+  }
+  ol.gates li::before {
+    content: "G" counter(g); position: absolute; left: 16px; top: 15px;
+    font-family: var(--mono); font-weight: 700; font-size: 13px; color: var(--accent);
+    background: var(--accent-soft); border-radius: 4px; padding: 2px 7px;
+  }
+  ol.gates .g-title { font-weight: 700; }
+  ol.gates .g-crit { font-size: 13.5px; color: var(--muted); margin-top: 2px; }
+
+  ul { padding-left: 22px; }
+  li { margin: 4px 0; }
+  a { color: var(--accent); }
+  .footnote { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); font-family: var(--mono); }
+</style>
+
+<div class="page">
+
+  <header class="doc-head">
+    <p class="eyebrow">C-POSITION-TRACE · ENGINEERING FEASIBILITY REVIEW</p>
+    <h1>寻车助手：工程可行性评审</h1>
+    <div class="meta">
+      <span>版本 v1.0</span>
+      <span>2026-07-06</span>
+      <span>平台 iOS 26 / iPhone 17</span>
+      <span>分支 claude/car-location-tracking-wlrh7v</span>
+    </div>
+  </header>
+
+  <!-- ============ 0 结论 ============ -->
+  <div class="verdict">
+    <span class="stamp">可行</span>
+    <p><strong>总体判断：工程上成立，可以启动。</strong>核心链路 100% 基于苹果公开 API，无私有接口、无逆向、无商场侧依赖；物理原理（气压-楼层分辨率）余量充足。存在 <strong>2 个必须用真机数据关门的验证项</strong>（触发成功率、锁车后后台窗口时长）和 <strong>1 个已确认的方案修正</strong>（AirTag 无法被第三方 App 蓝牙扫描，App 内"冷热指示"需改用 iBeacon 协议标签）。全部有降级路径，无单点致命风险。</p>
+  </div>
+
+  <!-- ============ 1 目标 ============ -->
+  <section>
+    <h2><span class="no">01</span>产品目标：三能力漏斗</h2>
+    <p class="h2-sub">三个能力独立可用、独立降级，叠加后把搜索空间从"整栋楼"逐级收口到"一辆车"。不依赖车型，不依赖商场任何基础设施。</p>
+    <div class="funnel">
+      <div class="funnel-row">
+        <span class="lvl">B?</span>
+        <div class="fr-body">
+          <div class="fr-title">能力一 · 楼层定位</div>
+          <div class="fr-note">车在 B 几层？——最重要、最有价值</div>
+        </div>
+        <div class="fr-scope">整栋楼 → 一层</div>
+      </div>
+      <div class="funnel-row">
+        <span class="lvl">区</span>
+        <div class="fr-body">
+          <div class="fr-title">能力二 · 层内定位</div>
+          <div class="fr-note">从楼层入口到车位怎么走？（返回入口 ≠ 离开出口）</div>
+        </div>
+        <div class="fr-scope">一层 → 几十米</div>
+      </div>
+      <div class="funnel-row">
+        <span class="lvl">↗</span>
+        <div class="fr-body">
+          <div class="fr-title">能力三 · 直线定位</div>
+          <div class="fr-note">我到车的方位 + 距离，最后几十米收口</div>
+        </div>
+        <div class="fr-scope">几十米 → 车</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 2 能力级可行性 ============ -->
+  <section>
+    <h2><span class="no">02</span>能力级可行性分析</h2>
+    <p class="h2-sub">每个能力给出：实现路径、依赖 API、失败模式、降级链、以及 Phase 0 的验证手段。评级含义——<span class="chip ok">成熟</span> API 与原理均有保证；<span class="chip warn">需实测</span> 原理成立但参数需真机数据；<span class="chip risk">有约束</span> 存在已确认的平台限制，需按修正方案实施。</p>
+
+    <!-- 能力一 -->
+    <div class="cap">
+      <div class="cap-head">
+        <span class="lvl">1</span>
+        <span class="cap-title">楼层定位 —— "锁车后走出式"气压测量</span>
+        <span class="chip warn">可行 · 需实测</span>
+      </div>
+      <div class="cap-body">
+        <dl>
+          <dt>实现路径</dt>
+          <dd>不在驾驶进库时测（App 无法保证后台存活），而在<strong>锁车触发后</strong>开启气压计，记录用户从车位走到地面参考点的相对高度变化。层差 = 高度差 ÷ 3m。电梯、扶梯、楼梯均有效。找车时反向提示"车在你下方 N 层"，到层后气压归零校核。</dd>
+          <dt>物理余量</dt>
+          <dd>一层 ≈ 3m ≈ 0.36 hPa；iPhone 气压计短时相对精度约 ±0.05 hPa（≈±0.4m）。<strong>信噪比约 7:1，余量充足。</strong>几分钟时间窗内天气漂移（通常 &lt;0.02 hPa/10min）可忽略。主要不确定性是电梯轿厢增压与空调风压，需分段取"高度平台期"而非瞬时值。</dd>
+          <dt>依赖 API</dt>
+          <dd><code>CMAltimeter.startRelativeAltitudeUpdates</code> · <code>CMPedometer.floorsAscended/Descended</code>（7 天历史回查）· <code>VNRecognizeTextRequest</code>（楼层牌 OCR）</dd>
+          <dt>失败模式与降级链</dt>
+          <dd>
+            <div class="fallback">
+              <span class="fb">气压实测（自动）</span><span class="arr">→</span>
+              <span class="fb">计步器楼层历史（补录，电梯无效）</span><span class="arr">→</span>
+              <span class="fb">拍楼层牌 OCR</span><span class="arr">→</span>
+              <span class="fb">通知一键选层（B1/B2/B3）</span>
+            </div>
+          </dd>
+          <dt>Phase 0 验证</dt>
+          <dd>2–3 个商场地库，电梯/扶梯/楼梯各走一遍，统计层差判定准确率；目标 ≥90%。</dd>
+        </dl>
+      </div>
+    </div>
+
+    <!-- 能力二 -->
+    <div class="cap">
+      <div class="cap-head">
+        <span class="lvl">2</span>
+        <span class="cap-title">层内定位 —— 面包屑 + 车位快照 + 信标接力</span>
+        <span class="chip warn">可行 · 分场景</span>
+      </div>
+      <div class="cap-body">
+        <dl>
+          <dt>实现路径（按场景拆分，工程上必须分开评估）</dt>
+          <dd>
+            <strong>场景 A · 原路返回：</strong>锁车后 PDR 面包屑（<code>CMPedometer</code> 步距 + <code>CMDeviceMotion</code> 航向）记录"车位→电梯"，找车时倒放为"直行 40 步 → 右转"式指令。限 300 步内，目标是带进目视/信标范围，不追求米级。<br>
+            <strong>场景 B · 换出口返回：</strong>面包屑失效。<em>无室内定位基础设施时纯软件无通用解</em>——这是本方案唯一明确承认的软件边界。通用解为车内蓝牙信标：到层后沿主车道行走，进入信号范围（实测预期 20–60m）即接力能力三。零硬件保底 = 车位号/分区照片（电梯厅分区图与商场找车机均可对照）。</dd>
+          <dt>失败模式与降级链</dt>
+          <dd>
+            <div class="fallback">
+              <span class="fb">面包屑倒放（原路）</span><span class="arr">→</span>
+              <span class="fb">信标接力（换出口）</span><span class="arr">→</span>
+              <span class="fb">车位号/分区快照（永远有效）</span>
+            </div>
+          </dd>
+          <dt>Phase 0 验证</dt>
+          <dd>PDR：150 步往返回放，终点误差 ≤15m 即达标。信标：地库实测发现距离（车身屏蔽衰减是主要变量）。</dd>
+        </dl>
+      </div>
+    </div>
+
+    <!-- 能力三 -->
+    <div class="cap">
+      <div class="cap-head">
+        <span class="lvl">3</span>
+        <span class="cap-title">直线定位 —— 三层距离接力</span>
+        <span class="chip risk">可行 · 有平台约束</span>
+      </div>
+      <div class="cap-body">
+        <dl>
+          <dt>实现路径</dt>
+          <dd>室内无 GPS，必须依赖车内信标。按距离接力：<strong>Find My 网络</strong>（路人 iPhone 匿名上报，"车在这一带"）→ <strong>BLE RSSI 冷热</strong>（20–60m）→ <strong>UWB 箭头</strong>（10–30m，米级 + 方向；iPhone 17 U2 芯片范围约为 U1 的 3 倍）。</dd>
+          <dt>平台约束（已确认，方案已按此修正 → 见 03 节 F1）</dt>
+          <dd>AirTag 的蓝牙广播身份<strong>周期性轮换加密</strong>（防跟踪设计），第三方 App 无法通过 <code>CoreBluetooth</code> 稳定识别某个特定 AirTag；其 UWB 精确查找也仅开放给系统"查找"App。因此：App 内冷热指示改用 <strong>iBeacon 协议标签</strong>（固定 UUID，公开 API：<code>CoreLocation</code> 测距 + 后台区域监测）；AirTag 的价值保留在 Find My 网络粗定位与系统 UWB 箭头（App 深链跳转"查找"）。App 内一体化 UWB 箭头需 <code>NearbyInteraction</code> 认证配件，归入档位 2。</dd>
+          <dt>依赖 API</dt>
+          <dd><code>CLBeaconRegion / CLLocationManager.startRangingBeacons</code>（iBeacon 测距，成熟十年）· <code>NearbyInteraction</code>（档位 2）· 查找 App 深链</dd>
+          <dt>Phase 0 验证</dt>
+          <dd>AirTag + iBeacon 各一枚放车内中控台：实测地库 BLE 发现距离、Find My 位置刷新时效、系统 UWB 接力距离。</dd>
+        </dl>
+      </div>
+    </div>
+
+    <!-- 支撑能力 -->
+    <div class="cap">
+      <div class="cap-head">
+        <span class="lvl">T</span>
+        <span class="cap-title">支撑能力 —— 锁车自动触发（一切记录的前提）</span>
+        <span class="chip warn">可行 · 需实测</span>
+      </div>
+      <div class="cap-body">
+        <dl>
+          <dt>实现路径</dt>
+          <dd><strong>主通道：</strong>快捷指令个人自动化"断开车机蓝牙 → 立即运行（无需确认）→ 调用 App Intent"。这是 iOS 上第三方获取锁车信号的唯一官方通道（App 直接监听蓝牙断开不被允许）。触发后 App 获得后台执行窗口，串行启动气压记录、面包屑、拍照提醒。<strong>兜底：</strong><code>CMMotionActivityManager</code> 7 天历史回放"驾驶→步行"切换时刻，App 未存活也能事后补录；再兜底为手动一键记录。</dd>
+          <dt>依赖 API</dt>
+          <dd><code>App Intents</code>（iOS 16+，后台执行）· 快捷指令自动化（蓝牙断开触发器）· <code>CMMotionActivityManager.queryActivityStarting</code> · <code>beginBackgroundTask</code> + 定位后台模式（延长记录窗口）</dd>
+          <dt>已知不确定性</dt>
+          <dd>① 自动化触发延迟与成功率（个别 iOS 版本对"立即运行"有过行为变化）；② App Intent 触发后的后台窗口时长（基线 ~30s，申请定位后台模式后预期分钟级）——这两项直接决定气压/面包屑能记多完整，是 <strong>G1/G2 关门项</strong>。</dd>
+          <dt>用户前置条件</dt>
+          <dd>iPhone 与车机完成普通蓝牙（音频/免提）配对；首启 30 秒引导建自动化。注意：车企 App 的 BLE 蓝牙钥匙不在系统设备列表，不能作触发器。</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 3 关键工程发现 ============ -->
+  <section>
+    <h2><span class="no">03</span>关键工程发现（评审中确认的事实）</h2>
+    <p class="h2-sub">影响方案形态的三个结论，均已吸收进上文实现路径。</p>
+
+    <div class="finding neg">
+      <div class="f-title">F1 · AirTag 不能被第三方 App 扫描 —— App 内冷热指示改用 iBeacon</div>
+      <p>AirTag 出于反跟踪设计轮换其蓝牙标识，<code>CoreBluetooth</code> 无法锁定特定 AirTag；UWB 精确查找仅限系统"查找"App。修正：档位 1 硬件从"一个 AirTag"改为 <strong>AirTag（Find My 粗定位 + 系统 UWB）+ iBeacon 标签（App 内冷热，约 ¥30）</strong>，或档位 2 自制信标一体覆盖。</p>
+    </div>
+
+    <div class="finding pos">
+      <div class="f-title">F2 · CoreMotion 历史可回查 7 天 —— 漏记从"灾难"降为"折损"</div>
+      <p>活动切换（驾驶→步行）、步数、上下楼层数均可事后查询。即使自动化未触发、App 未运行，打开 App 仍能补录停车时刻与近似楼层，只损失气压精测与面包屑。</p>
+    </div>
+
+    <div class="finding">
+      <div class="f-title">F3 · "换出口返回 + 零硬件"是明确的软件能力边界</div>
+      <p>无室内定位基础设施时该场景纯软件无通用解。产品层面必须做预期管理：零硬件档位的承诺是"楼层 + 车位号照片"，不是"步步导航"。这不是实现缺陷，是物理约束。</p>
+    </div>
+  </section>
+
+  <!-- ============ 4 架构 ============ -->
+  <section>
+    <h2><span class="no">04</span>系统架构</h2>
+    <p class="h2-sub">纯客户端架构，无后端，数据不出设备。传感器/定位/蓝牙全部隔离在协议后，领域层可用录制数据回放测试——这是本项目可测性的关键设计。</p>
+    <div class="arch">
+      <div class="arch-layer">
+        <div class="al-name">触发层 Trigger</div>
+        <div class="arch-mods">
+          <span class="mod">App Intent「记录停车」<small>App Intents</small></span>
+          <span class="mod">快捷指令自动化（用户侧配置）<small>Shortcuts</small></span>
+          <span class="mod">历史补录器<small>CMMotionActivityManager</small></span>
+          <span class="mod">手动记录<small>UI</small></span>
+        </div>
+      </div>
+      <div class="arch-layer">
+        <div class="al-name">采集层 Sensing（协议封装，可回放测试）</div>
+        <div class="arch-mods">
+          <span class="mod">气压高度流<small>CMAltimeter</small></span>
+          <span class="mod">PDR 面包屑<small>CMPedometer + CMDeviceMotion</small></span>
+          <span class="mod">定位/入口坐标<small>CoreLocation</small></span>
+          <span class="mod">iBeacon 测距<small>CLBeaconRegion</small></span>
+          <span class="mod">车位牌 OCR<small>Vision</small></span>
+        </div>
+      </div>
+      <div class="arch-layer">
+        <div class="al-name">领域层 Domain（纯 Swift，无框架依赖）</div>
+        <div class="arch-mods">
+          <span class="mod">停车-找车状态机</span>
+          <span class="mod">楼层推算器（平台期分段）</span>
+          <span class="mod">面包屑压缩与倒放</span>
+          <span class="mod">置信度与降级决策</span>
+        </div>
+      </div>
+      <div class="arch-layer">
+        <div class="al-name">存储层 Persistence</div>
+        <div class="arch-mods">
+          <span class="mod">停车快照<small>SwiftData</small></span>
+          <span class="mod">照片<small>本地文件</small></span>
+        </div>
+      </div>
+      <div class="arch-layer">
+        <div class="al-name">呈现层 Find-My-Car UI</div>
+        <div class="arch-mods">
+          <span class="mod">找车流程页<small>SwiftUI</small></span>
+          <span class="mod">楼层指示 + 实时气压校核</span>
+          <span class="mod">冷热雷达<small>iBeacon RSSI</small></span>
+          <span class="mod">外部跳转<small>查找 App / 地图 URL scheme</small></span>
+        </div>
+      </div>
+      <div class="arch-note">MVP 无后端 · 共享功能未来加轻后端</div>
+    </div>
+  </section>
+
+  <!-- ============ 5 依赖与权限 ============ -->
+  <section>
+    <h2><span class="no">05</span>API 依赖与权限清单</h2>
+    <p class="h2-sub">全部为公开稳定 API，最低 iOS 16（App Intents 决定），目标 iOS 26。权限共 5 项，均在对应功能首次使用时请求，不在启动时轰炸。</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>依赖</th><th>用途</th><th>最低版本</th><th>成熟度</th><th>备注</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>App Intents</code> + 快捷指令</td><td>锁车触发主通道</td><td class="num">iOS 16</td><td><span class="chip warn">需实测</span></td><td>触发延迟/成功率 = G1</td></tr>
+          <tr><td><code>CMAltimeter</code></td><td>楼层判定</td><td class="num">iOS 8</td><td><span class="chip ok">成熟</span></td><td>iPhone 6 起全系气压计</td></tr>
+          <tr><td><code>CMPedometer</code> / <code>CMMotionActivityManager</code></td><td>面包屑 / 历史补录</td><td class="num">iOS 8/11</td><td><span class="chip ok">成熟</span></td><td>7 天历史回查</td></tr>
+          <tr><td><code>CoreLocation</code>（含 iBeacon 测距）</td><td>入口坐标 / 冷热雷达 / 后台窗口延长</td><td class="num">iOS 7</td><td><span class="chip ok">成熟</span></td><td>iBeacon 十年成熟度</td></tr>
+          <tr><td><code>Vision</code> OCR</td><td>车位号/楼层牌识别</td><td class="num">iOS 13</td><td><span class="chip ok">成熟</span></td><td>本地推理，中英数混排可用</td></tr>
+          <tr><td><code>NearbyInteraction</code></td><td>App 内 UWB 箭头（档位 2）</td><td class="num">iOS 14</td><td><span class="chip info">可选</span></td><td>需认证 UWB 配件</td></tr>
+          <tr><td>SwiftData / SwiftUI</td><td>存储 / UI</td><td class="num">iOS 17</td><td><span class="chip ok">成熟</span></td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>权限</th><th>触发时机</th><th>拒绝后的降级</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>定位（使用期间 → 引导始终）</td><td>首次记录停车</td><td>无入口坐标，室内三能力不受影响</td></tr>
+          <tr><td>运动与健身</td><td>首次记录停车</td><td>失去气压/面包屑/历史补录 → 拍照+选层</td></tr>
+          <tr><td>蓝牙</td><td>配置信标时</td><td>失去冷热雷达 → 车位快照</td></tr>
+          <tr><td>相机</td><td>首次拍车位牌</td><td>手动输入车位号</td></tr>
+          <tr><td>通知</td><td>首次记录成功后</td><td>失去拍照提醒/一键选层入口</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ 6 数据模型与状态机 ============ -->
+  <section>
+    <h2><span class="no">06</span>数据模型与状态机</h2>
+    <h3>停车快照（核心实体，一次停车一条）</h3>
+    <pre class="schema">ParkingSnapshot {
+  id: UUID
+  createdAt: Date
+  trigger: <span class="k">.automation | .manual | .backfill</span>   <span class="c">// 触发来源，决定置信度基线</span>
+  entranceCoordinate: CLLocationCoordinate2D?  <span class="c">// 进库前最后高精度点</span>
+  floorDelta: Int?          <span class="c">// 相对地面层差，-2 = B2</span>
+  floorConfidence: <span class="k">.measured | .stepsInferred | .userPicked | .unknown</span>
+  altitudeTrace: [AltitudeSample]?             <span class="c">// 原始气压序列，供复核</span>
+  breadcrumb: [BreadcrumbSegment]?             <span class="c">// {步数, 航向变化} 压缩段</span>
+  spotPhoto: FileRef?
+  spotLabel: String?        <span class="c">// OCR/手输，如 "B2-东-035"</span>
+  beaconID: BeaconRef?      <span class="c">// 绑定的 iBeacon</span>
+  retrievedAt: Date?        <span class="c">// 找到车后归档</span>
+}</pre>
+
+    <h3>停车-找车状态机</h3>
+    <div class="sm">
+      <div class="sm-state"><span class="s-name">IDLE 待机</span><div class="s-desc">等待触发；7 天内可由历史补录生成低置信度快照</div></div>
+      <div class="sm-edge">蓝牙断开自动化 / 手动记录</div>
+      <div class="sm-state"><span class="s-name">RECORDING 记录中</span><div class="s-desc">并行：气压采样 · PDR 面包屑 · 发拍照提醒通知（后台窗口内）</div></div>
+      <div class="sm-edge">到达地面判定：GPS 恢复 ∧ 高度平台期 ∧ 持续步行</div>
+      <div class="sm-state"><span class="s-name">PARKED 已停车</span><div class="s-desc">落盘快照（层差、面包屑、照片、坐标），静默待命</div></div>
+      <div class="sm-edge">用户点「找车」</div>
+      <div class="sm-state"><span class="s-name">RETRIEVING 寻车</span><div class="s-desc">室外导航到入口 → 楼层指示+气压校核 → 面包屑/快照/信标冷热 → 深链查找 App 收口</div></div>
+      <div class="sm-edge">信标近距 ∨ 用户确认找到 ∨ 检测到再次驾驶</div>
+      <div class="sm-state"><span class="s-name">IDLE 待机</span><div class="s-desc">本次快照归档为历史</div></div>
+    </div>
+  </section>
+
+  <!-- ============ 7 风险矩阵 ============ -->
+  <section>
+    <h2><span class="no">07</span>风险矩阵</h2>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>风险</th><th>可能性</th><th>影响</th><th>对策</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>自动化未建 / 未触发</td><td><span class="chip warn">中</span></td><td>无实测记录</td><td>历史补录（F2）+ 手动记录；首启强引导</td></tr>
+          <tr><td>锁车后后台窗口不足</td><td><span class="chip warn">中</span></td><td>气压/面包屑记录截断</td><td>定位后台模式延长；截断数据仍可部分推算；车位快照保底</td></tr>
+          <tr><td>电梯增压 / 空调风压扰动</td><td><span class="chip warn">中</span></td><td>层差 ±1 层误差</td><td>平台期分段算法；置信度低转一键选层</td></tr>
+          <tr><td>车身屏蔽 BLE 信号</td><td><span class="chip warn">中</span></td><td>接力距离缩短至 &lt;20m</td><td>引导信标放中控台/前挡；Phase 0 实测校准文案</td></tr>
+          <tr><td>换出口 + 零硬件</td><td><span class="chip ok">确定</span></td><td>该场景无步步引导</td><td>产品预期管理：承诺"楼层+车位号"（F3）</td></tr>
+          <tr><td>PDR 航向漂移</td><td><span class="chip warn">中</span></td><td>面包屑带偏</td><td>限 300 步；输出"步数+转向"指令而非地图</td></tr>
+          <tr><td>iOS 版本变更自动化行为</td><td><span class="chip ok">低</span></td><td>触发通道退化</td><td>历史补录兜底本身不依赖自动化</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ 8 硬件档位 ============ -->
+  <section>
+    <h2><span class="no">08</span>外部硬件要求（按 F1 修正后）</h2>
+    <p class="h2-sub">商场侧零要求。用户侧三档，档位间平滑升级，App 逻辑自动探测可用硬件。</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>档位</th><th>硬件</th><th class="num">成本</th><th>能力一</th><th>能力二</th><th>能力三</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>0 · 纯手机</strong></td><td>无</td><td class="num">¥0</td>
+            <td>✅ 完整</td><td>⚠️ 原路面包屑 + 快照</td><td>❌ 照片兜底</td>
+          </tr>
+          <tr>
+            <td><strong>1 · 推荐</strong></td><td>iBeacon 标签（App 内冷热）+ 可选 AirTag（Find My + 系统 UWB 箭头）</td><td class="num">¥30–280</td>
+            <td>✅ 完整</td><td>✅ 换出口信标接力</td><td>✅ 三层接力完整</td>
+          </tr>
+          <tr>
+            <td><strong>2 · 进阶/量产</strong></td><td>自制信标：BLE + 气压计 + 长续航（ESP32-C3 + BMP390）</td><td class="num">~¥50 物料</td>
+            <td>✅✅ 手机-信标实时差分判层，免疫漂移与漏记</td><td>✅ 发射功率可调，范围更远</td><td>✅ App 内一体化（加 UWB 模组得箭头）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:14px; color:var(--muted);">手机要求：气压计 iPhone 6+，系统 UWB 箭头 iPhone 11+。目标设备 iPhone 17 全部满足，且 U2 芯片 UWB 范围为上代约 3 倍。</p>
+  </section>
+
+  <!-- ============ 9 计划与关门项 ============ -->
+  <section>
+    <h2><span class="no">09</span>开发计划与 Phase 0 关门项</h2>
+    <p class="h2-sub">Phase 0 不写产品代码，只回答"参数是否达标"。四个关门项（Gate）各对应一个验证 Demo，任何一项不达标即触发对应降级链，不阻塞主线。</p>
+    <ol class="gates">
+      <li>
+        <div class="g-title">触发链路：蓝牙断开 → 自动化 → App Intent 后台执行</div>
+        <div class="g-crit">达标线：触发成功率 ≥95%，延迟 ≤30s；同时测出后台窗口时长基线</div>
+      </li>
+      <li>
+        <div class="g-title">走出式气压判层（2–3 个商场地库实测）</div>
+        <div class="g-crit">达标线：电梯/扶梯/楼梯三种方式下层差判定准确率 ≥90%</div>
+      </li>
+      <li>
+        <div class="g-title">信标实测：iBeacon 地库发现距离 + AirTag Find My 刷新时效 + 系统 UWB 接力距离</div>
+        <div class="g-crit">达标线：iBeacon 车内放置发现距离 ≥20m</div>
+      </li>
+      <li>
+        <div class="g-title">PDR 面包屑往返误差</div>
+        <div class="g-crit">达标线：150 步往返终点误差 ≤15m（目视可见范围）</div>
+      </li>
+    </ol>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>阶段</th><th class="num">周期</th><th>范围</th><th>验收</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Phase 0</strong> 可行性验证</td><td class="num">1–2 周</td><td>G1–G4 四个验证 Demo</td><td>参数达标或确定降级形态</td></tr>
+          <tr><td><strong>Phase 1</strong> MVP</td><td class="num">3–4 周</td><td>触发 + 判层 + 快照 OCR + 找车流程（跳转收口）</td><td>零操作记录 ≥90%，判层 ≥90%</td></tr>
+          <tr><td><strong>Phase 2</strong> 三能力完整</td><td class="num">4 周</td><td>面包屑回放 + iBeacon 冷热雷达 + 缴费计时提醒</td><td>换出口场景到车 &lt;5 分钟</td></tr>
+          <tr><td><strong>Phase 3</strong> 增强</td><td class="num">按需</td><td>差分气压信标 · App 内 UWB · 室内图叠加 · 共享 · Android</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ 10 结论 ============ -->
+  <section>
+    <h2><span class="no">10</span>工程结论</h2>
+    <ul>
+      <li><strong>确定可行（API 与原理双保证）：</strong>历史补录、车位快照 OCR、iBeacon 冷热雷达、楼层一键选层、全部存储与 UI。这些构成任何情况下都成立的产品底座。</li>
+      <li><strong>大概率可行（原理余量充足，参数待 Phase 0 实测）：</strong>走出式气压判层（信噪比 7:1）、自动化触发链路、PDR 面包屑。</li>
+      <li><strong>已明确的边界（不是缺陷，是物理/平台约束）：</strong>换出口 + 零硬件无步步引导（F3）；AirTag 不可被 App 扫描（F1，已改 iBeacon）；App 内 UWB 箭头需专用配件（归档位 2）。</li>
+      <li><strong>工程属性健康：</strong>无后端、无私有 API、无商场依赖、权限按需请求、领域层可回放测试；最大的外部依赖是"用户建一条快捷指令自动化"，且有两级兜底。</li>
+    </ul>
+    <p><strong>建议：批准进入 Phase 0。</strong>四个验证 Demo 约 1–2 周，其中 G1 在自家车位即可完成，G2–G4 需一次商场地库实测。</p>
+  </section>
+
+  <p class="footnote">c-postion-trace · DESIGN.md v3 的工程评审视图 · 评审人待签</p>
+
+</div>
