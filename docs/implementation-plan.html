@@ -1,0 +1,452 @@
+<title>寻车助手 · 实施计划</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --surface-2: #eef1f5;
+    --ink: #1c232e;
+    --muted: #5c6675;
+    --line: #dfe4ea;
+    --accent: #2757c4;
+    --accent-ink: #ffffff;
+    --accent-soft: #e8eefb;
+    --ok: #17784f;
+    --ok-soft: #e2f3ea;
+    --warn: #92650a;
+    --warn-soft: #faf0d8;
+    --risk: #b03a30;
+    --risk-soft: #fbe7e4;
+    --p0: #6b4fbb;
+    --p0-soft: #ece7f8;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #11141a; --surface: #191e26; --surface-2: #20262f; --ink: #e6eaf1;
+      --muted: #98a2b1; --line: #2b323d; --accent: #7ea3f5; --accent-ink: #0e1524;
+      --accent-soft: #1d2a44; --ok: #52c08c; --ok-soft: #16301f; --warn: #ddb355;
+      --warn-soft: #33290f; --risk: #e2796e; --risk-soft: #391a17;
+      --p0: #a68ce8; --p0-soft: #2a2140;
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #f5f6f8; --surface: #ffffff; --surface-2: #eef1f5; --ink: #1c232e;
+    --muted: #5c6675; --line: #dfe4ea; --accent: #2757c4; --accent-ink: #ffffff;
+    --accent-soft: #e8eefb; --ok: #17784f; --ok-soft: #e2f3ea; --warn: #92650a;
+    --warn-soft: #faf0d8; --risk: #b03a30; --risk-soft: #fbe7e4;
+    --p0: #6b4fbb; --p0-soft: #ece7f8;
+  }
+  :root[data-theme="dark"] {
+    --bg: #11141a; --surface: #191e26; --surface-2: #20262f; --ink: #e6eaf1;
+    --muted: #98a2b1; --line: #2b323d; --accent: #7ea3f5; --accent-ink: #0e1524;
+    --accent-soft: #1d2a44; --ok: #52c08c; --ok-soft: #16301f; --warn: #ddb355;
+    --warn-soft: #33290f; --risk: #e2796e; --risk-soft: #391a17;
+    --p0: #a68ce8; --p0-soft: #2a2140;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    font-size: 16px; line-height: 1.75;
+  }
+  .page { max-width: 960px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  .doc-head { border-bottom: 2px solid var(--ink); padding-bottom: 28px; margin-bottom: 36px; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--muted); margin: 0 0 10px;
+  }
+  h1 { font-size: clamp(28px, 4.5vw, 40px); line-height: 1.25; margin: 0 0 14px; font-weight: 700; text-wrap: balance; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 13px; color: var(--muted); font-family: var(--mono); }
+
+  section { margin-top: 52px; }
+  h2 { font-size: 21px; font-weight: 700; margin: 0 0 6px; display: flex; align-items: baseline; gap: 12px; }
+  h2 .no { font-family: var(--mono); font-size: 13px; color: var(--accent); letter-spacing: 0.08em; flex: none; }
+  .h2-sub { color: var(--muted); font-size: 14.5px; margin: 0 0 20px; max-width: 68ch; }
+  h3 { font-size: 16.5px; margin: 28px 0 10px; font-weight: 700; }
+  p { max-width: 72ch; }
+  ul { padding-left: 22px; } li { margin: 4px 0; }
+  code {
+    font-family: var(--mono); font-size: 0.86em; background: var(--surface-2);
+    border: 1px solid var(--line); padding: 1px 6px; border-radius: 4px; white-space: nowrap;
+  }
+
+  .chip {
+    display: inline-block; font-family: var(--mono); font-size: 12px; font-weight: 700;
+    padding: 2px 10px; border-radius: 4px; letter-spacing: 0.05em; white-space: nowrap;
+  }
+  .chip.ok   { color: var(--ok);   background: var(--ok-soft); }
+  .chip.warn { color: var(--warn); background: var(--warn-soft); }
+  .chip.risk { color: var(--risk); background: var(--risk-soft); }
+  .chip.info { color: var(--accent); background: var(--accent-soft); }
+  .chip.p0   { color: var(--p0); background: var(--p0-soft); }
+
+  .callout {
+    display: flex; gap: 18px; align-items: flex-start;
+    background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent);
+    padding: 20px 22px; border-radius: 6px; margin: 0 0 14px;
+  }
+  .callout .stamp {
+    flex: none; font-family: var(--mono); font-weight: 700; font-size: 14px;
+    color: var(--accent); background: var(--accent-soft);
+    padding: 4px 12px; border-radius: 4px; letter-spacing: 0.08em; margin-top: 3px;
+  }
+  .callout p { margin: 0; }
+
+  .tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); margin-top: 18px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 660px; }
+  th {
+    text-align: left; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted); padding: 12px 16px;
+    border-bottom: 1px solid var(--line); background: var(--surface-2); white-space: nowrap;
+  }
+  td { padding: 11px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td.num, th.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td .tid { font-family: var(--mono); font-size: 12.5px; color: var(--accent); font-weight: 700; white-space: nowrap; }
+
+  /* ---------- gantt ---------- */
+  .gantt-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); margin-top: 18px; padding: 18px; }
+  .gantt { display: grid; grid-template-columns: 180px repeat(10, minmax(44px, 1fr)); gap: 4px 0; min-width: 700px; align-items: center; }
+  .gantt .gh {
+    font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: center;
+    padding-bottom: 6px; border-bottom: 1px solid var(--line);
+  }
+  .gantt .gh.first { text-align: left; }
+  .gantt .grow-label { font-size: 13px; padding: 4px 10px 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gantt .grow-label small { color: var(--muted); font-family: var(--mono); font-size: 11px; }
+  .gantt .bar { height: 18px; border-radius: 4px; margin: 5px 2px; }
+  .bar.c-p0 { background: var(--p0); }
+  .bar.c-p1 { background: var(--accent); }
+  .bar.c-p2 { background: var(--ok); }
+  .bar.c-field { background: var(--warn); }
+  .gantt .ms {
+    width: 14px; height: 14px; background: var(--risk); margin: 7px auto;
+    transform: rotate(45deg); border-radius: 2px;
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 14px; font-size: 13px; color: var(--muted); }
+  .legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; }
+  .legend .sw.dm { transform: rotate(45deg); border-radius: 2px; background: var(--risk); }
+
+  /* ---------- milestones ---------- */
+  .ms-list { display: grid; gap: 10px; margin-top: 18px; }
+  .ms-item {
+    display: flex; gap: 16px; align-items: flex-start;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 18px;
+  }
+  .ms-item .ms-tag {
+    flex: none; font-family: var(--mono); font-weight: 700; font-size: 13px;
+    color: var(--risk); background: var(--risk-soft); padding: 3px 10px; border-radius: 4px; margin-top: 2px;
+  }
+  .ms-item .ms-body { min-width: 0; }
+  .ms-item .ms-title { font-weight: 700; }
+  .ms-item .ms-note { font-size: 13.5px; color: var(--muted); }
+  .ms-item .ms-date { margin-left: auto; flex: none; font-family: var(--mono); font-size: 12.5px; color: var(--muted); white-space: nowrap; margin-top: 4px; }
+  @media (max-width: 560px) { .ms-item .ms-date { display: none; } }
+
+  /* ---------- field checklist ---------- */
+  .field {
+    border: 1px solid var(--line); border-left: 4px solid var(--warn);
+    background: var(--surface); border-radius: 6px; padding: 16px 20px; margin-top: 16px;
+  }
+  .field .f-title { font-weight: 700; margin-bottom: 6px; }
+  .field ul { margin: 6px 0 0; font-size: 15px; }
+
+  .footnote { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); font-family: var(--mono); }
+</style>
+
+<div class="page">
+
+  <header class="doc-head">
+    <p class="eyebrow">C-POSITION-TRACE · IMPLEMENTATION PLAN</p>
+    <h1>寻车助手：实施计划</h1>
+    <div class="meta">
+      <span>版本 v1.0</span>
+      <span>2026-07-07</span>
+      <span>基线：DESIGN.md v3 + 可行性评审 v1.0</span>
+      <span>分支 claude/car-location-tracking-wlrh7v</span>
+    </div>
+  </header>
+
+  <div class="callout">
+    <span class="stamp">总览</span>
+    <p>三阶段共 <strong>10 个工作周</strong>（2026-07-13 启动 → 2026-09-20 三能力完整），外加按需的 Phase 3。资源假设：<strong>1 名 iOS 开发（全职）+ 产品负责人兼实测员（即你本人，累计约 4 个半天的实车/商场实测）</strong>。计划的骨架是三个里程碑：M0 关门决策（W2 末）→ M1 MVP 可日常使用（W6 末）→ M2 三能力完整（W10 末）。所有排期估算按此资源假设线性伸缩。</p>
+  </div>
+
+  <!-- ============ 1 前提 ============ -->
+  <section>
+    <h2><span class="no">01</span>启动前提与采购</h2>
+    <p class="h2-sub">W1 开工前必须就位的事项，任何一项延迟直接顺延排期。</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>事项</th><th>负责</th><th>期限</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>Apple 开发者账号 + 真机调试环境</td><td>开发</td><td class="num">W1 前</td><td>个人账号即可，TestFlight 需付费账号（Phase 1 末才用到）</td></tr>
+          <tr><td>硬件采购：iBeacon 标签 ×2、AirTag ×1、备用纽扣电池</td><td>产品</td><td class="num">W1 内到货</td><td>约 ¥310；iBeacon 选可配置 UUID/TxPower 的型号</td></tr>
+          <tr><td>iPhone 与车机完成普通蓝牙（音频）配对</td><td>产品</td><td class="num">W1 前</td><td>触发链路验证的前提；确认配对的是音频蓝牙而非 App 内蓝牙钥匙</td></tr>
+          <tr><td>选定 2–3 个实测商场（多层地库、有电梯+扶梯+楼梯）</td><td>产品</td><td class="num">W1 内</td><td>建议含一个"超大单层"商场覆盖换出口场景</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ 2 路线图 ============ -->
+  <section>
+    <h2><span class="no">02</span>总体路线图（10 周甘特）</h2>
+    <p class="h2-sub">W1 = 2026-07-13 那周。橙色段为需要你本人参与的实地实测；红色菱形为里程碑决策点。</p>
+    <div class="gantt-wrap">
+      <div class="gantt">
+        <div class="gh first">任务 / 周</div>
+        <div class="gh">W1</div><div class="gh">W2</div><div class="gh">W3</div><div class="gh">W4</div><div class="gh">W5</div>
+        <div class="gh">W6</div><div class="gh">W7</div><div class="gh">W8</div><div class="gh">W9</div><div class="gh">W10</div>
+
+        <div class="grow-label">P0 工程骨架 + 4 个验证 Demo <small>P0</small></div>
+        <div class="bar c-p0" style="grid-column: 2 / 4;"></div>
+        <div style="grid-column: 4 / 12;"></div>
+
+        <div class="grow-label">P0 实车 / 地库实测 ①② <small>实测</small></div>
+        <div style="grid-column: 2 / 3;"></div>
+        <div class="bar c-field" style="grid-column: 3 / 4;"></div>
+        <div style="grid-column: 4 / 12;"></div>
+
+        <div class="grow-label">M0 关门决策 <small>里程碑</small></div>
+        <div style="grid-column: 2 / 4;"></div>
+        <div class="ms" style="grid-column: 4 / 5; margin-left: 0;"></div>
+        <div style="grid-column: 5 / 12;"></div>
+
+        <div class="grow-label">E1 触发与记录管线 <small>P1</small></div>
+        <div style="grid-column: 2 / 4;"></div>
+        <div class="bar c-p1" style="grid-column: 4 / 6;"></div>
+        <div style="grid-column: 6 / 12;"></div>
+
+        <div class="grow-label">E2 楼层判定引擎 <small>P1</small></div>
+        <div style="grid-column: 2 / 5;"></div>
+        <div class="bar c-p1" style="grid-column: 5 / 7;"></div>
+        <div style="grid-column: 7 / 12;"></div>
+
+        <div class="grow-label">E3 车位快照 + OCR <small>P1</small></div>
+        <div style="grid-column: 2 / 5;"></div>
+        <div class="bar c-p1" style="grid-column: 5 / 6;"></div>
+        <div style="grid-column: 6 / 12;"></div>
+
+        <div class="grow-label">E4 找车流程 UI <small>P1</small></div>
+        <div style="grid-column: 2 / 6;"></div>
+        <div class="bar c-p1" style="grid-column: 6 / 8;"></div>
+        <div style="grid-column: 8 / 12;"></div>
+
+        <div class="grow-label">E5/E6 存储·历史·补录器 <small>P1</small></div>
+        <div style="grid-column: 2 / 6;"></div>
+        <div class="bar c-p1" style="grid-column: 6 / 7;"></div>
+        <div style="grid-column: 7 / 12;"></div>
+
+        <div class="grow-label">MVP 验收实测 ③ <small>实测</small></div>
+        <div style="grid-column: 2 / 7;"></div>
+        <div class="bar c-field" style="grid-column: 7 / 8;"></div>
+        <div style="grid-column: 8 / 12;"></div>
+
+        <div class="grow-label">M1 MVP 可日常使用 <small>里程碑</small></div>
+        <div style="grid-column: 2 / 8;"></div>
+        <div class="ms" style="grid-column: 8 / 9;"></div>
+        <div style="grid-column: 9 / 12;"></div>
+
+        <div class="grow-label">E7 面包屑记录/倒放 <small>P2</small></div>
+        <div style="grid-column: 2 / 8;"></div>
+        <div class="bar c-p2" style="grid-column: 8 / 10;"></div>
+        <div style="grid-column: 10 / 12;"></div>
+
+        <div class="grow-label">E8 iBeacon 冷热雷达 <small>P2</small></div>
+        <div style="grid-column: 2 / 9;"></div>
+        <div class="bar c-p2" style="grid-column: 9 / 11;"></div>
+        <div style="grid-column: 11 / 12;"></div>
+
+        <div class="grow-label">E9 计时/缴费提醒 <small>P2</small></div>
+        <div style="grid-column: 2 / 10;"></div>
+        <div class="bar c-p2" style="grid-column: 10 / 11;"></div>
+        <div style="grid-column: 11 / 12;"></div>
+
+        <div class="grow-label">换出口回归实测 ④ <small>实测</small></div>
+        <div style="grid-column: 2 / 11;"></div>
+        <div class="bar c-field" style="grid-column: 11 / 12;"></div>
+
+        <div class="grow-label">M2 三能力完整 <small>里程碑</small></div>
+        <div style="grid-column: 2 / 11;"></div>
+        <div class="ms" style="grid-column: 11 / 12;"></div>
+      </div>
+      <div class="legend">
+        <span><span class="sw" style="background:var(--p0);"></span>Phase 0 验证</span>
+        <span><span class="sw" style="background:var(--accent);"></span>Phase 1 MVP</span>
+        <span><span class="sw" style="background:var(--ok);"></span>Phase 2 三能力</span>
+        <span><span class="sw" style="background:var(--warn);"></span>实地实测（需产品参与）</span>
+        <span><span class="sw dm"></span>里程碑</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 3 里程碑 ============ -->
+  <section>
+    <h2><span class="no">03</span>里程碑与决策点</h2>
+    <div class="ms-list">
+      <div class="ms-item">
+        <span class="ms-tag">M0</span>
+        <div class="ms-body">
+          <div class="ms-title">Phase 0 关门决策</div>
+          <div class="ms-note">G1–G4 实测数据齐 → 逐项决定"按设计实施"或"锁定降级形态"（如 G1 不达标则自动记录降级为半自动 + 补录为主）。产出《Phase 0 验证报告》并回写 DESIGN.md。<strong>这是唯一可能改变方案形态的决策点。</strong></div>
+        </div>
+        <span class="ms-date">W2 末 · 07-26</span>
+      </div>
+      <div class="ms-item">
+        <span class="ms-tag">M1</span>
+        <div class="ms-body">
+          <div class="ms-title">MVP 可日常使用（能力一闭环）</div>
+          <div class="ms-note">锁车自动记录 + 楼层判定 + 车位快照 + 找车流程可跑通；TestFlight 装到你手机开始日常真实使用（dogfooding），后续 4 周的真实停车数据反哺 Phase 2 调参。</div>
+        </div>
+        <span class="ms-date">W6 末 · 08-23</span>
+      </div>
+      <div class="ms-item">
+        <span class="ms-tag">M2</span>
+        <div class="ms-body">
+          <div class="ms-title">三能力完整（产品目标达成）</div>
+          <div class="ms-note">面包屑 + 冷热雷达上线，换出口场景实测"进入正确楼层到找到车 &lt; 5 分钟"。之后进入 Phase 3 按需迭代。</div>
+        </div>
+        <span class="ms-date">W10 末 · 09-20</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 4 Phase 0 WBS ============ -->
+  <section>
+    <h2><span class="no">04</span>Phase 0 任务分解（W1–W2，验证优先）</h2>
+    <p class="h2-sub">不写产品代码，只回答"参数是否达标"。骨架先行，四个 Demo 共用同一套传感器协议层——这些代码 Phase 1 直接复用，不是弃件。</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>ID</th><th>任务</th><th>交付物</th><th class="num">估算</th><th>依赖</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tid">P0-1</span></td><td>Xcode 工程骨架：SwiftUI 壳、传感器协议层（<code>AltitudeSource</code> / <code>MotionSource</code> / <code>BeaconSource</code> 协议 + 真实/回放双实现）、数据导出（CSV/JSON 分享）</td><td>可编译工程 + 协议层</td><td class="num">1.5 d</td><td>—</td></tr>
+          <tr><td><span class="tid">P0-2</span></td><td>G1 触发链路 Demo：「记录停车」App Intent + 触发时间戳/后台存活时长打点 + 快捷指令自动化配置指引</td><td>Demo + 自家车位 5 次停车数据</td><td class="num">2 d</td><td>P0-1</td></tr>
+          <tr><td><span class="tid">P0-3</span></td><td>G2 气压 Demo：<code>CMAltimeter</code> 连续记录 + 平台期分段算法初版 + 层差标注界面</td><td>Demo + 2 商场 × 3 种上行方式数据</td><td class="num">2 d</td><td>P0-1</td></tr>
+          <tr><td><span class="tid">P0-4</span></td><td>G3 信标 Demo：iBeacon 测距/RSSI 记录 + AirTag Find My 刷新时效人工记录表</td><td>Demo + 地库距离衰减曲线</td><td class="num">1.5 d</td><td>P0-1，硬件到货</td></tr>
+          <tr><td><span class="tid">P0-5</span></td><td>G4 PDR Demo：步数 + 航向流记录、往返误差测量</td><td>Demo + 150 步往返误差数据</td><td class="num">2 d</td><td>P0-1</td></tr>
+          <tr><td><span class="tid">P0-6</span></td><td>数据分析 + 《Phase 0 验证报告》+ M0 决策会</td><td>报告 + 逐 Gate 结论回写 DESIGN.md</td><td class="num">1 d</td><td>P0-2…P0-5</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="field">
+      <div class="f-title">实测 ①②（需产品参与，约 2 个半天）</div>
+      <ul>
+        <li><strong>实测①（W1 末，自家车位）：</strong>正常停车锁车 ×5 次，覆盖"立即走开 / 车内坐 2 分钟再走 / 手机口袋里"三种姿态 → G1 数据。</li>
+        <li><strong>实测②（W2，商场半天）：</strong>每个商场停 B1/B2/B3 各一次，分别走电梯、扶梯、楼梯上到地面并折返 → G2 数据；顺路完成 G3 距离测量与 G4 往返走。</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 5 Phase 1 WBS ============ -->
+  <section>
+    <h2><span class="no">05</span>Phase 1 任务分解（W3–W6，MVP）</h2>
+    <p class="h2-sub">共约 20 人天。E1/E2 是关键路径；E3–E6 可与之并行穿插。验收线：零操作记录成功率 ≥90%，楼层判定准确率 ≥90%。</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>ID</th><th>Epic / 任务</th><th>关键内容</th><th class="num">估算</th><th>依赖</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tid">E1</span></td><td>触发与记录管线</td><td>App Intent 正式版；后台窗口管理（<code>beginBackgroundTask</code> + 定位后台模式，按 G1 实测参数配置）；状态机 <code>IDLE→RECORDING→PARKED</code>；"到达地面"判定（GPS 恢复 ∧ 高度平台 ∧ 持续步行）；记录中断的部分数据落盘</td><td class="num">4 d</td><td>M0</td></tr>
+          <tr><td><span class="tid">E2</span></td><td>楼层判定引擎</td><td>平台期分段算法产品化（G2 数据调参）；置信度模型（<code>measured / stepsInferred / userPicked</code>）;置信度低时推送一键选层通知；找车时实时气压校核（"还需再下 1 层"）</td><td class="num">3 d</td><td>E1</td></tr>
+          <tr><td><span class="tid">E3</span></td><td>车位快照</td><td>锁车通知快捷拍照入口；Vision OCR 车位号提取（正则：<code>[A-G]?B?\d层?[-·]?[东南西北]?区?[-·]?\d{1,4}</code> 族）；识别失败手输兜底</td><td class="num">2.5 d</td><td>E1</td></tr>
+          <tr><td><span class="tid">E4</span></td><td>找车流程 UI</td><td>找车主流程页（楼层指示 → 快照展示 → 外部跳转）；地图 URL scheme（Apple/高德）到入口坐标；查找 App 深链；罗盘雷达兜底视图</td><td class="num">4 d</td><td>E2, E3</td></tr>
+          <tr><td><span class="tid">E5</span></td><td>存储与历史</td><td>SwiftData 模型（<code>ParkingSnapshot</code> 全字段）；停车历史列表 + 归档；照片文件管理</td><td class="num">2 d</td><td>E1</td></tr>
+          <tr><td><span class="tid">E6</span></td><td>历史补录器</td><td><code>CMMotionActivityManager</code> 7 天回查 → 生成低置信度快照；打开 App 时自动检测"有停车未记录"并提示补录</td><td class="num">2 d</td><td>E5</td></tr>
+          <tr><td><span class="tid">E-QA</span></td><td>测试与发布</td><td>领域层回放单测（用 Phase 0 录制数据作 fixture）；权限文案与按需请求编排；TestFlight 首个构建</td><td class="num">2.5 d</td><td>E1–E6</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="field">
+      <div class="f-title">实测 ③（W6，MVP 验收，1 个半天 + 开始日常 dogfooding）</div>
+      <ul>
+        <li>商场实测：完整走一遍"停车 → 逛 2 小时 → 找车"，验收零操作记录与判层准确率。</li>
+        <li>验收通过后 TestFlight 装机，<strong>此后每次真实停车都在产生调参数据</strong>（App 内一键反馈"这次判层对/错"）。</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 6 Phase 2 WBS ============ -->
+  <section>
+    <h2><span class="no">06</span>Phase 2 任务分解（W7–W10，三能力完整）</h2>
+    <p class="h2-sub">共约 20 人天（含 5 天缓冲，吸收 Phase 1 dogfooding 反馈）。验收线：换出口场景从进入正确楼层到找到车 &lt; 5 分钟。</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>ID</th><th>Epic / 任务</th><th>关键内容</th><th class="num">估算</th><th>依赖</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tid">E7</span></td><td>面包屑记录与倒放</td><td>锁车后 PDR 段压缩存储（{步数, 转向} 序列，限 300 步）；找车时倒放为分步指令卡（"直行约 40 步 → 右转"）；G4 实测误差参数化提示文案</td><td class="num">5 d</td><td>M1</td></tr>
+          <tr><td><span class="tid">E8</span></td><td>iBeacon 冷热雷达</td><td>信标绑定流程（首次配置引导，含放置位置建议）；找车中前台持续测距 + 冷热/趋势 UI；<code>CLBeaconRegion</code> 后台进入区域通知（"已接近车辆信号范围"）；与 E4 流程无缝接力</td><td class="num">5 d</td><td>M1，G3 参数</td></tr>
+          <tr><td><span class="tid">E9</span></td><td>停车计时与缴费提醒</td><td>停车时长展示；免费时长倒计时提醒（用户设置商场免费时长）</td><td class="num">2 d</td><td>E5</td></tr>
+          <tr><td><span class="tid">E-REG</span></td><td>回归与验收</td><td>换出口场景专项实测；判层/触发成功率的累计指标看板（App 内调试页）；缓冲修复</td><td class="num">8 d<br>(含 5d 缓冲)</td><td>E7, E8</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="field">
+      <div class="f-title">实测 ④（W10，M2 验收，1 个半天）</div>
+      <ul>
+        <li>选"超大单层"商场：停车后<strong>故意从另一个出口离开、再从第三个入口返回</strong>，全程计时，验收 &lt;5 分钟目标。</li>
+        <li>同场验证后台区域通知的触发距离与 UWB（查找 App）接力体验。</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 7 Phase 3 backlog ============ -->
+  <section>
+    <h2><span class="no">07</span>Phase 3 Backlog（按需启动，不排期）</h2>
+    <ul>
+      <li><strong>差分气压信标</strong>（档位 2）：ESP32-C3 + BMP390 原型，手机-信标实时差分判层——若 Phase 1/2 数据显示气压方案的漏记率偏高，此项优先级提升。</li>
+      <li><strong>App 内 UWB 箭头</strong>：<code>NearbyInteraction</code> 认证配件调研与集成。</li>
+      <li>室内地图叠加（高德室内图有覆盖的商场）；家人共享车位（首个需要后端的功能）；多车管理；Android 版。</li>
+    </ul>
+  </section>
+
+  <!-- ============ 8 测试策略 ============ -->
+  <section>
+    <h2><span class="no">08</span>测试策略</h2>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>层级</th><th>手段</th><th>覆盖目标</th></tr></thead>
+        <tbody>
+          <tr><td>单元测试（持续）</td><td>领域层纯 Swift，用 Phase 0 起持续录制的传感器数据作回放 fixture（<code>AltitudeSource</code> 等协议的回放实现）</td><td>楼层分段算法、状态机转换、面包屑压缩/倒放、置信度决策——<strong>不进地库就能回归的部分最大化</strong></td></tr>
+          <tr><td>集成测试（每 Epic）</td><td>真机脚本化场景：模拟定位 + 录制数据注入</td><td>触发→记录→落盘→找车全链路</td></tr>
+          <tr><td>实地测试（4 次）</td><td>固定 checklist 的实测①–④（见各 Phase）</td><td>只验证无法在实验室复现的物理参数</td></tr>
+          <tr><td>Dogfooding（M1 起）</td><td>TestFlight 日常使用 + App 内一键对错反馈</td><td>真实分布下的成功率指标，喂给 Phase 2 调参</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:14.5px; color:var(--muted); max-width:72ch;">度量口径（App 内调试页常显）：自动触发成功率、判层准确率、快照完整度（有照片/有层差/有面包屑的比例）、找车用时。M1/M2 验收即读此看板。</p>
+  </section>
+
+  <!-- ============ 9 计划级风险 ============ -->
+  <section>
+    <h2><span class="no">09</span>计划级风险与应对</h2>
+    <p class="h2-sub">技术风险已在可行性评审中覆盖，此处只列影响排期的风险。</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>风险</th><th>触发点</th><th>对排期的影响与应对</th></tr></thead>
+        <tbody>
+          <tr><td>G1 不达标（触发成功率 &lt;95%）</td><td class="num">M0</td><td>E1 改为"半自动 + 补录为主"形态，工作量不变，产品承诺降级；<strong>不顺延</strong></td></tr>
+          <tr><td>G2 不达标（判层 &lt;90%）</td><td class="num">M0</td><td>E2 重心移到一键选层 + 计步推断，气压转为辅助；E2 估算 -1d</td></tr>
+          <tr><td>实测排不出时间（依赖产品本人）</td><td class="num">各实测点</td><td>关键路径上只有实测①②；③④可与开发并行，延迟只影响验收时点不阻塞开发</td></tr>
+          <tr><td>iOS 26.x 更新改变自动化行为</td><td class="num">随时</td><td>补录链路独立于自动化，最坏退化为"打开 App 补录"；升级前留观察版本</td></tr>
+          <tr><td>单人开发的估算偏差</td><td class="num">持续</td><td>Phase 2 已含 5d 缓冲；M1 范围内 E6（补录器）可降级为手动补录入口，省 1.5d</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ 10 协作与变更 ============ -->
+  <section>
+    <h2><span class="no">10</span>协作方式与变更管理</h2>
+    <ul>
+      <li><strong>节奏：</strong>周一计划 / 周五对进度；里程碑各开一次决策会（M0 必须同步过实测数据再拍板）。</li>
+      <li><strong>产品负责人的全部投入清单：</strong>W1 前完成采购与蓝牙配对；实测①②③④共约 4 个半天；M1 起日常 dogfooding 顺手点对错反馈。其余时间无需参与。</li>
+      <li><strong>代码与文档：</strong>开发在 <code>claude/car-location-tracking-wlrh7v</code> 分支进行；DESIGN.md 是唯一事实来源，M0 的任何形态锁定、以及实施中偏离设计的决定，当天回写 DESIGN.md 并在 commit message 注明。</li>
+      <li><strong>范围纪律：</strong>Phase 1/2 期间的新想法一律进 Phase 3 Backlog，不插队；唯一例外是 M0 数据驱动的形态调整。</li>
+    </ul>
+  </section>
+
+  <p class="footnote">c-postion-trace · 实施计划 v1.0 · 基线 DESIGN.md v3 · 下一步：P0-1 工程骨架</p>
+
+</div>
